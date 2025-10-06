@@ -1,0 +1,22 @@
+spring:
+  application:
+    name: demoDevOps
+  datasource:
+    url: jdbc:postgresql://localhost:5432/demoDevOps
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update   # en démo → crée / met à jour les tables
+    show-sql: true       # affiche les requêtes SQL dans la console
+    open-in-view: false
+
+server:
+  port: 8081
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
