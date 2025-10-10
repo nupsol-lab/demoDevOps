@@ -1,46 +1,55 @@
 #!/bin/bash
+set -euo pipefail
 
 # ==============================
 # 🚀 Script: prepare_build_env.sh
-# Objectif: Builder le projet complet depuis WSL
-#            sans casser les ACL Windows.
+# Build full project from WSL (keeps Windows ACL isolation)
 # ==============================
 
-# === CONFIGURATION ===
-SOURCE_DIR="/mnt/c/DevProjects/demoDevOps"
+# === CONFIG ===
+GIT_URL="${GIT_URL:-https://github.com/<org>/<repo>.git}"   # << set this once
+GIT_BRANCH="${GIT_BRANCH:-main}"
 BUILD_DIR="$HOME/dev_build/demoDevOps"
 DOCKER_COMPOSE_FILE="docker-compose.yml"
 APP_HEALTH_URL="http://localhost:8081/actuator/health"
 
-# === ÉTAPE 1: Nettoyage ancien build ===
-echo "🧹 Nettoyage de l'ancien environnement..."
+echo "🧹 Cleaning previous build dir..."
 rm -rf "$BUILD_DIR"
 mkdir -p "$BUILD_DIR"
 
-# === ÉTAPE 2: Copie du projet vers WSL ===
-echo "📁 Copie du projet depuis $SOURCE_DIR vers $BUILD_DIR..."
-cp -r --no-preserve=mode,ownership "$SOURCE_DIR/"* "$BUILD_DIR"/
+echo "⬇️ Cloning $GIT_URL#$GIT_BRANCH into $BUILD_DIR ..."
+git clone --depth 1 --branch "$GIT_BRANCH" "$GIT_URL" "$BUILD_DIR"
 
-# === ÉTAPE 3: Déplacement dans le dossier du build ===
-cd "$BUILD_DIR" || { echo "❌ Impossible d'accéder à $BUILD_DIR"; exit 1; }
+cd "$BUILD_DIR" || { echo "❌ Cannot cd to $BUILD_DIR"; exit 1; }
 
-# === ÉTAPE 4: Nettoyage Docker et Maven ===
-echo "🐳 Nettoyage Docker & Maven..."
-docker system prune -f >/dev/null 2>&1
-./mvnw clean -q || echo "ℹ️ Maven clean ignoré si wrapper absent."
-
-# === ÉTAPE 5: Build Docker Compose ===
-echo "🏗️ Lancement du build Docker..."
-docker compose -f "$DOCKER_COMPOSE_FILE" up --build -d
-
-# === ÉTAPE 6: Vérification de la santé de l'application ===
-echo "🩺 Vérification du health-check..."
-sleep 10  # Attente du démarrage de l'application
-
-if curl -fs "$APP_HEALTH_URL" >/dev/null 2>&1; then
-  echo "✅ Application en ligne : $APP_HEALTH_URL"
-else
-  echo "⚠️ Health-check échoué. Vérifie les logs avec : docker compose logs"
+# Ensure .env exists (create default if missing)
+if [[ ! -f .env ]]; then
+  echo "DB_USER=postgres"     > .env
+  echo "DB_PASSWORD=postgres" >> .env
+  echo "DB_NAME=demoDevOps"   >> .env
+  echo "ℹ️ Created default .env"
 fi
 
-echo "🎯 Build complet terminé avec succès."
+echo "🐳 Pruning old Docker stuff (safe)..."
+docker system prune -f >/dev/null 2>&1 || true
+
+echo "🏗️ Building & starting with Docker Compose..."
+docker compose up --build -d
+
+echo "⏳ Waiting for app to boot..."
+# tiny wait + profile check + health
+sleep 5
+echo "🔎 Active profiles:"
+docker logs demo_app 2>&1 | grep -i "profile" || echo "⚠️ No profile line (may be normal)"
+echo "🩺 Health check:"
+for i in {1..12}; do
+  if curl -fsS "$APP_HEALTH_URL" >/dev/null; then
+    echo "✅ App is UP at $APP_HEALTH_URL"
+    exit 0
+  fi
+  sleep 2
+done
+
+echo "⚠️ Health-check failed. Check logs:"
+docker compose logs --no-log-prefix app | tail -n 200
+exit 1

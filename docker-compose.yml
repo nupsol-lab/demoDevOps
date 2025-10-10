@@ -14,12 +14,19 @@ services:
       - demo-net
     volumes:
       - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${DB_USER}" ]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
 
   app:
     build: .
     container_name: demo_app
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     environment:
       SPRING_PROFILES_ACTIVE: docker
       DB_USER: ${DB_USER}

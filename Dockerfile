@@ -2,20 +2,18 @@
 FROM eclipse-temurin:24-jdk AS build
 WORKDIR /app
 
-COPY gradlew gradlew
-COPY gradle/ gradle/
-COPY settings.gradle* build.gradle* ./
-
-RUN chmod +x gradlew
-RUN ./gradlew --no-daemon --version
-
 COPY . .
 RUN chmod +x gradlew
-RUN ./gradlew --no-daemon clean bootJar
+RUN ./gradlew clean bootJar --no-daemon
 
 # ===== RUNTIME =====
 FROM eclipse-temurin:24-jre
 WORKDIR /app
-COPY --from=build /app/build/libs/*.jar /app/app.jar
+
+COPY --from=build /app/build/libs/*.jar app.jar
+
+# ✅ Force le profil docker
+ENV SPRING_PROFILES_ACTIVE=docker
+
 EXPOSE 8081
-ENTRYPOINT ["java","-jar","/app/app.jar"]
+ENTRYPOINT ["java", "-jar", "app.jar"]
