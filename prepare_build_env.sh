@@ -7,7 +7,7 @@ set -euo pipefail
 # ==============================
 
 # === CONFIG ===
-GIT_URL="${GIT_URL:-https://github.com/<org>/<repo>.git}"   # << set this once
+GIT_URL="${GIT_URL:-https://github.com/nupsol-lab/demoDevOps.git}"   # << set this once
 GIT_BRANCH="${GIT_BRANCH:-main}"
 BUILD_DIR="$HOME/dev_build/demoDevOps"
 DOCKER_COMPOSE_FILE="docker-compose.yml"
