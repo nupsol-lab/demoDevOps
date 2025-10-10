@@ -6,8 +6,74 @@ on:
     branches: ["main"]
 
 jobs:
+  owners-enforcer:
+    name: Enforce Code Owner Reviews
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Detect changed paths
+        id: changes
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            smp:
+              - 'src/main/java/com/demoapp/smp/**'
+            ccp:
+              - 'src/main/java/com/demoapp/ccp/**'
+            shared:
+              - 'src/main/java/com/demoapp/shared/**'
+
+      - name: Validate approvals by team
+        uses: actions/github-script@v7
+        env:
+          SMP_OWNERS: "team-smp"
+          CCP_OWNERS: "team-ccp"
+          SHARED_OWNERS: "team-core,team-smp,team-ccp"
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const {owner, repo} = context.repo;
+            const reviews = await github.paginate(
+              github.rest.pulls.listReviews,
+              { owner, repo, pull_number: pr.number }
+            );
+            const approvers = new Set(
+              reviews.filter(r => r.state === 'APPROVED').map(r => r.user.login.toLowerCase())
+            );
+
+            const getOwners = (envKey) =>
+              process.env[envKey].split(',').map(o => o.trim().toLowerCase()).filter(Boolean);
+
+            const missing = [];
+
+            if ('${{ steps.changes.outputs.smp }}' === 'true') {
+              const owners = getOwners('SMP_OWNERS');
+              if (!owners.some(o => approvers.has(o))) missing.push('SMP');
+            }
+
+            if ('${{ steps.changes.outputs.ccp }}' === 'true') {
+              const owners = getOwners('CCP_OWNERS');
+              if (!owners.some(o => approvers.has(o))) missing.push('CCP');
+            }
+
+            if ('${{ steps.changes.outputs.shared }}' === 'true') {
+              const owners = getOwners('SHARED_OWNERS');
+              if (!owners.some(o => approvers.has(o))) missing.push('SHARED');
+            }
+
+            if (missing.length > 0) {
+              core.setFailed(`❌ Missing required approvals for module(s): ${missing.join(', ')}`);
+            } else {
+              core.info("✅ All required approvals present");
+            }
+
   build-test:
     runs-on: ubuntu-latest
+    needs: [owners-enforcer] # <--- ajout important
     steps:
       - uses: actions/checkout@v4
       - name: Set up JDK 24

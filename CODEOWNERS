@@ -1,16 +1,12 @@
 #Contrôle d’accès par modules (packages)
 
 # Module SMP : produits
-/src/main/java/com/demoapp/smp/**      @team-smp
-/src/test/java/com/demoapp/smp/**      @team-smp
+/src/main/java/com/example/demodevops/smp/**      @team-smp
+
 
 # Module CCP : clients
-/src/main/java/com/demoapp/ccp/**      @team-ccp
-/src/test/java/com/demoapp/ccp/**      @team-ccp
+/src/main/java/com/example/demodevops/ccp/**      @team-ccp
 
-# Module shared : code commun
-/src/main/java/com/demoapp/shared/**   @team-core @team-smp @team-ccp
-/src/test/java/com/demoapp/shared/**   @team-core @team-smp @team-ccp
 
 # Infra & CI
 /.github/**                            @devops

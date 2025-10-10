@@ -5,9 +5,12 @@ WORKDIR /app
 COPY gradlew gradlew
 COPY gradle/ gradle/
 COPY settings.gradle* build.gradle* ./
+
+RUN chmod +x gradlew
 RUN ./gradlew --no-daemon --version
 
 COPY . .
+RUN chmod +x gradlew
 RUN ./gradlew --no-daemon clean bootJar
 
 # ===== RUNTIME =====

@@ -1,5 +1,37 @@
-environment:
-  SPRING_PROFILES_ACTIVE: docker
-  DB_USER: ${DB_USER}
-  DB_PASSWORD: ${DB_PASSWORD}
-  DB_NAME: ${DB_NAME}
+version: "3.8"
+
+services:
+  db:
+    image: postgres:16
+    container_name: postgres_demo
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    ports:
+      - "5432:5432"
+    networks:
+      - demo-net
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  app:
+    build: .
+    container_name: demo_app
+    depends_on:
+      - db
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+    ports:
+      - "8081:8081"
+    networks:
+      - demo-net
+
+volumes:
+  pgdata:
+
+networks:
+  demo-net:
