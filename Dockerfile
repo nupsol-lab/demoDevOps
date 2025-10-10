@@ -2,6 +2,11 @@
 FROM eclipse-temurin:24-jdk AS build
 WORKDIR /app
 COPY . .
+
+# --- DEBUG: vérifier que les sources sont là dans l'image de build
+RUN echo "== Tree of sources ==" \
+ && ls -lR src/main/java/com/example/demodevops || true \
+
 RUN chmod +x gradlew
 RUN ./gradlew clean bootJar --no-daemon --stacktrace --info
 
