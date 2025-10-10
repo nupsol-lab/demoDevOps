@@ -32,18 +32,20 @@ EOF
 fi
 
 # --- Pre-check: ensure both modules are present ---
-echo "🔎 Pre-check source visibility..."
-for p in \
-  "src/main/java/com/example/demodevops/smp" \
-  "src/main/java/com/example/demodevops/ccp"
-do
-  if [[ ! -d "$p" ]]; then
-    echo "❌ Missing path in build dir: $p"
-    echo "   Aborting to avoid building an incomplete JAR."
-    exit 1
+echo "🔎 Pré-check source visibility..."
+need=("smp" "ccp")
+for module in "${need[@]}"; do
+  base="src/main/java/com/example/demodevops/$module"
+  if [[ ! -d "$base" ]]; then
+    echo "❌ Dossier manquant: $base" ; exit 1
+  fi
+  # ⚠️ Vérifie qu'il y a au moins 1 .java
+  if ! find "$base" -type f -name '*.java' | head -n1 >/dev/null; then
+    echo "❌ Aucun .java dans: $base (branche/commit incomplet ?)" ; exit 1
   fi
 done
-echo "✅ Pre-check OK (smp + ccp present)."
+echo "✅ Pré-check OK (smp + ccp avec des .java)."
+
 
 echo "🐳 Docker prune (safe)…"
 docker system prune -f >/dev/null 2>&1 || true
