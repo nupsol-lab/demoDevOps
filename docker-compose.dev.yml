@@ -1,0 +1,15 @@
+services:
+  app:
+    image: eclipse-temurin:24-jdk
+    working_dir: /workspace
+    volumes:
+      - .:/workspace
+      # cache Gradle persistant côté Docker (pas dans le repo)
+      - gradle-cache:/root/.gradle
+    command: bash -lc "./gradlew bootRun --no-daemon"
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+volumes:
+  gradle-cache:

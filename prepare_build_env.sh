@@ -50,8 +50,15 @@ echo "✅ Pré-check OK (smp + ccp avec des .java)."
 echo "🐳 Docker prune (safe)…"
 docker system prune -f >/dev/null 2>&1 || true
 
-echo "🏗️ docker compose up --build -d"
-docker compose up --build -d
+echo "🐳 choosing mode and run docker compose…"
+MODE="${MODE:-prod}"   # prod | dev
+
+if [[ "$MODE" == "dev" ]]; then
+  docker compose -f docker-compose.dev.yml up --build -d
+else
+  docker compose up --build -d
+fi
+
 
 echo "⏳ Waiting for app health..."
 for i in {1..20}; do
