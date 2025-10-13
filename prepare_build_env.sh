@@ -14,7 +14,7 @@ set -euo pipefail
 GIT_URL="${GIT_URL:-https://github.com/nupsol-lab/demoDevOps.git}"
 GIT_BRANCH="${GIT_BRANCH:-main}"
 BUILD_DIR="$HOME/dev_build/demoDevOps"
-OVERLAY_DIR="${OVERLAY_DIR:-/mnt/c/DevProjects/demoDevOps}"
+#OVERLAY_DIR="${OVERLAY_DIR:-/mnt/c/DevProjects/demoDevOps}"
 APP_HEALTH_URL="http://localhost:8081/actuator/health"
 
 echo "🧹 Cleaning build dir..."
@@ -25,24 +25,22 @@ echo "⬇️ Cloning $GIT_URL#$GIT_BRANCH ..."
 git clone --depth 1 --branch "$GIT_BRANCH" "$GIT_URL" "$BUILD_DIR"
 cd "$BUILD_DIR" || { echo "❌ Cannot cd to $BUILD_DIR"; exit 1; }
 
-# === Overlay local optionnel ===
-if [ -d "$OVERLAY_DIR" ]; then
-  echo "🔁 Applying local overlay from: $OVERLAY_DIR"
+# === NEW: Copy project to WSL workspace for faster IO ===
+WSL_COPY_DIR="/home/ser/projects/demoDevOps"
+SRC_WIN="/mnt/c/DevProjects/demoDevOps"
 
-  RSYNC_EXCLUDE=()
-  if [ -f "$OVERLAY_DIR/.overlayignore" ]; then
-    RSYNC_EXCLUDE+=(--exclude-from="$OVERLAY_DIR/.overlayignore")
-    echo "📄 Using .overlayignore from overlay"
-  fi
+echo "🚀 Syncing project from Windows to WSL..."
+mkdir -p "$(dirname "$WSL_COPY_DIR")"
+rsync -a --delete \
+  --exclude 'build/' \
+  --exclude '.gradle/' \
+  --exclude '.git/' \
+  --exclude 'node_modules/' \
+  "$SRC_WIN"/ "$WSL_COPY_DIR"/
 
-  echo "⚙️  Syncing overlay files..."
-  rsync -a --checksum "${RSYNC_EXCLUDE[@]}" "$OVERLAY_DIR"/ "$BUILD_DIR"/
-
-  echo "📋 Diff vs clean repo (non commité) :"
-  git --no-pager diff --stat || true
-else
-  echo "ℹ️ No overlay directory found at $OVERLAY_DIR (skipping)"
-fi
+echo "✅ Project copied to $WSL_COPY_DIR"
+cd "$WSL_COPY_DIR"
+# === End of copy ===
 
 # === Génération du .env si absent ===
 if [[ ! -f .env ]]; then
@@ -70,7 +68,7 @@ echo "🐳 Docker prune (safe)…"
 docker system prune -f >/dev/null 2>&1 || true
 
 echo "🛠️ Building and starting containers..."
-docker compose up --build -d
+docker compose -f docker-compose.dev.yml up --build -d
 
 # === Health-check ===
 echo "⏳ Waiting for app health..."
