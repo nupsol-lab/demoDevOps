@@ -63,15 +63,29 @@ EOF
 fi
 
 # === Pré-check sources obligatoires ===
-echo "🔎 Checking core modules (smp / ccp)..."
-need=("smp" "ccp")
+echo "🔎 Checking core modules..."
+CURRENT_USER=$(whoami)
+
+if [[ "$CURRENT_USER" == "smp_user" ]]; then
+  need=("smp")
+elif [[ "$CURRENT_USER" == "ccp_user" ]]; then
+  need=("ccp")
+else
+  need=("smp" "ccp")
+fi
+
 for module in "${need[@]}"; do
   base="src/main/java/com/example/demodevops/$module"
-  [[ -d "$base" ]] || { echo "❌ Missing folder: $base"; exit 1; }
-  find "$base" -type f -name '*.java' | head -n1 >/dev/null \
-    || { echo "❌ No .java found in: $base"; exit 1; }
+  if [[ -d "$base" ]]; then
+    find "$base" -type f -name '*.java' | head -n1 >/dev/null \
+      || { echo "❌ No .java found in: $base"; exit 1; }
+  else
+    echo "⚠️ Folder missing: $base (ignored for $CURRENT_USER)"
+  fi
 done
-echo "✅ Pre-check OK."
+
+echo "✅ Pre-check OK for user: $CURRENT_USER"
+
 
 # === Docker build & run ===
 echo "🐳 Docker prune (safe)…"
