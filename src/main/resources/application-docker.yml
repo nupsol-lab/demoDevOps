@@ -1,4 +1,11 @@
 spring:
+  devtools:
+    restart:
+      enabled: false
+    livereload:
+      enabled: false
+  main:
+      lazy-initialization: true
   datasource:
     url: jdbc:postgresql://db:5432/${DB_NAME}
     username: ${DB_USER}

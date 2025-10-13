@@ -30,6 +30,7 @@ services:
       DB_USER: ${DB_USER}
       DB_PASSWORD: ${DB_PASSWORD}
       DB_NAME: ${DB_NAME}
+      JAVA_TOOL_OPTIONS: "-XX:TieredStopAtLevel=1 -XX:+UseParallelGC"
       GRADLE_OPTS: "-Dorg.gradle.vfs.watch=false"
     ports:
       - "8081:8081"
