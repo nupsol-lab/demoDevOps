@@ -25,22 +25,32 @@ echo "⬇️ Cloning $GIT_URL#$GIT_BRANCH ..."
 git clone --depth 1 --branch "$GIT_BRANCH" "$GIT_URL" "$BUILD_DIR"
 cd "$BUILD_DIR" || { echo "❌ Cannot cd to $BUILD_DIR"; exit 1; }
 
-# === NEW: Copy project to WSL workspace for faster IO ===
+# === NEW: Clone full project from Git + overlay local changes ===
 WSL_COPY_DIR="/home/ser/projects/demoDevOps"
 SRC_WIN="/mnt/c/DevProjects/demoDevOps"
 
-echo "🚀 Syncing project from Windows to WSL..."
-mkdir -p "$(dirname "$WSL_COPY_DIR")"
-rsync -a --delete \
-  --exclude 'build/' \
-  --exclude '.gradle/' \
-  --exclude '.git/' \
-  --exclude 'node_modules/' \
-  "$SRC_WIN"/ "$WSL_COPY_DIR"/
+echo "🌐 Cloning fresh project from Git..."
+sudo rm -rf "$WSL_COPY_DIR"
+git clone --depth 1 --branch main https://github.com/nupsol-lab/demoDevOps.git "$WSL_COPY_DIR"
 
-echo "✅ Project copied to $WSL_COPY_DIR"
+# === Apply local overlay (optional, only what Windows can read) ===
+if [ -d "$SRC_WIN" ]; then
+  echo "🔁 Applying local overlay from $SRC_WIN..."
+  rsync -a \
+    --exclude 'build/' \
+    --exclude '.gradle/' \
+    --exclude '.git/' \
+    --exclude 'node_modules/' \
+    --exclude 'src/main/java/com/example/demodevops/ccp/' \
+    "$SRC_WIN"/ "$WSL_COPY_DIR"/ || true
+
+else
+  echo "⚠️ No local overlay found at $SRC_WIN"
+fi
+
+echo "✅ Project ready in $WSL_COPY_DIR"
 cd "$WSL_COPY_DIR"
-# === End of copy ===
+
 
 # === Génération du .env si absent ===
 if [[ ! -f .env ]]; then
@@ -71,8 +81,7 @@ echo "🛠️ Building and starting containers..."
 docker compose -f docker-compose.dev.yml up --build -d
 
 # === Health-check ===
-echo "⏳ Waiting for app health..."
-for i in {1..20}; do
+for i in {1..60}; do  # 60 * 2s = 2 minutes
   if curl -fsS "$APP_HEALTH_URL" >/dev/null; then
     echo "✅ App is UP at $APP_HEALTH_URL"
     exit 0
