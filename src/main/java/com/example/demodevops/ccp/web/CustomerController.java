@@ -14,9 +14,9 @@ public class CustomerController {
 
     private final CustomerRepository customerRepository;
 
-    @GetMapping
+    @GetMapping("/all")
     public List<Customer> findAll() {
-        return customerRepository.findAll();
+        return customerRepository.findAllCustomers();
     }
 
     @PostMapping

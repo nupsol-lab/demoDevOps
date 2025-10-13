@@ -1,15 +1,50 @@
 services:
-  app:
-    image: eclipse-temurin:24-jdk
-    working_dir: /workspace
+  db:
+    image: postgres:16
+    container_name: postgres_demo
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    ports:
+      - "5432:5432"
+    networks:
+      - demo-net
     volumes:
-      - .:/workspace
-      # cache Gradle persistant côté Docker (pas dans le repo)
-      - gradle-cache:/root/.gradle
-    command: bash -lc "./gradlew bootRun --no-daemon"
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER}"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  app:
+    image: eclipse-temurin:24-jdk          # JDK complet pour bootRun
+    working_dir: /app
+    container_name: demo_app_dev
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+      GRADLE_OPTS: "-Dorg.gradle.vfs.watch=false"
     ports:
       - "8081:8081"
-    environment:
-      SPRING_PROFILES_ACTIVE: dev
+    networks:
+      - demo-net
+    volumes:
+      - .:/app                              # ton code source monté
+      - /home/ser/.gradle-cache:/root/.gradle  # cache Gradle persistant dans WSL
+    entrypoint: []                          # neutralise ENTRYPOINT du Dockerfile
+    command: ./gradlew bootRun
+    tty: true
+    stdin_open: true
+
 volumes:
-  gradle-cache:
+  pgdata:
+
+networks:
+  demo-net:

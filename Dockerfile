@@ -18,9 +18,10 @@ RUN --mount=type=cache,target=/root/.gradle ./gradlew -g /root/.gradle \
 # 3) Copier les sources seulement maintenant (pour préserver le cache deps)
 COPY src src
 
+RUN chmod +x gradlew
 # 4) Build rapide (réutilise le cache Gradle)
 RUN --mount=type=cache,target=/root/.gradle ./gradlew -g /root/.gradle \
-    clean bootJar --no-daemon --stacktrace --info
+    clean bootJar --no-daemon
 
 # ===== RUNTIME =====
 FROM eclipse-temurin:24-jre
