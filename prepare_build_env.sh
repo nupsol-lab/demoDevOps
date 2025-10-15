@@ -11,7 +11,6 @@ GIT_URL="${GIT_URL:-https://github.com/nupsol-lab/demoDevOps.git}"
 GIT_BRANCH="${GIT_BRANCH:-main}"
 BUILD_DIR="$HOME/dev_build/demoDevOps"
 #OVERLAY_DIR="${OVERLAY_DIR:-/mnt/c/DevProjects/demoDevOps}"
-APP_HEALTH_URL="http://localhost:8081/actuator/health"
 
 echo "🧹 Cleaning build dir..."
 rm -rf "$BUILD_DIR"
