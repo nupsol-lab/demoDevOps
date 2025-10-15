@@ -6,10 +6,6 @@ set -euo pipefail
 # Build full project from WSL (keeps Windows ACL isolation)
 # ==============================
 
-# === CONFIG ===
-#!/bin/bash
-set -euo pipefail
-
 # === PARAMÈTRES GLOBAUX ===
 GIT_URL="${GIT_URL:-https://github.com/nupsol-lab/demoDevOps.git}"
 GIT_BRANCH="${GIT_BRANCH:-main}"
