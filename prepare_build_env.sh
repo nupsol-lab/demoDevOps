@@ -94,15 +94,5 @@ docker system prune -f >/dev/null 2>&1 || true
 echo "🛠️ Building and starting containers..."
 docker compose -f docker-compose.dev.yml up --build -d
 
-# === Health-check ===
-for i in {1..60}; do  # 60 * 2s = 2 minutes
-  if curl -fsS "$APP_HEALTH_URL" >/dev/null; then
-    echo "✅ App is UP at $APP_HEALTH_URL"
-    exit 0
-  fi
-  sleep 2
-done
 
-echo "⚠️ Health-check failed. Showing last app logs:"
-docker compose logs --no-log-prefix app | tail -n 200
 exit 1
